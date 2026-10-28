@@ -4,13 +4,14 @@ require("dotenv").config();
 const connectDB = require("./db");
 const userRoutes = require("./routes/user.routes");
 const protect = require("./middeleware/auth.middleware");
-
+const serviceRoutes = require("./routes/service.routes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/users", userRoutes);
+app.use("/api/services", serviceRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALBAB API is running!");
