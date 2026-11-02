@@ -1,7 +1,9 @@
 
 import { useState } from "react";
 
-const API_URL = "http://localhost:5000/api/users";
+// Backend URL
+const BACKEND_URL = "https://albab.onrender.com";
+const API_URL = `${BACKEND_URL}/api/users`;
 
 const Auth = ({ onLogin, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -125,7 +127,9 @@ const Auth = ({ onLogin, onClose }) => {
             required
           />
 
-          {error && <p className="auth-message">{error}</p>}
+          {error && (
+            <p className="auth-message">{error}</p>
+          )}
 
           <button type="submit" disabled={loading}>
             {loading
