@@ -16,6 +16,7 @@ const App = () => {
   const [showMyOrders, setShowMyOrders] = useState(false);
 
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
 
   // Fetch services
@@ -38,6 +39,40 @@ const App = () => {
     };
 
     fetchServices();
+  }, []);
+
+  // Restore user session
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setAuthLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Session expired");
+        }
+
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   // Handle login
@@ -82,7 +117,14 @@ const App = () => {
     alert("Your order has been placed successfully!");
   };
 
-  // Show authentication
+  if (authLoading) {
+    return (
+      <div className="status-message">
+        Checking your session...
+      </div>
+    );
+  }
+
   if (showAuth) {
     return (
       <Auth
@@ -92,7 +134,6 @@ const App = () => {
     );
   }
 
-  // Show customer orders
   if (showMyOrders) {
     return (
       <MyOrders
@@ -103,7 +144,6 @@ const App = () => {
 
   return (
     <div className="app">
-      {/* Navbar */}
       <nav className="navbar">
         <a href="#home" className="logo">
           AL<span>BAB</span>
@@ -156,7 +196,6 @@ const App = () => {
       </nav>
 
       <main>
-        {/* Hero */}
         <section className="hero" id="home">
           <div className="hero-content">
             <span className="hero-tag">
@@ -217,7 +256,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* Services */}
         <section className="services-section" id="services">
           <div className="section-heading">
             <span>WHAT WE OFFER</span>
@@ -273,7 +311,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* About */}
         <section className="about-section" id="about">
           <span>ABOUT ALBAB</span>
 
@@ -288,7 +325,6 @@ const App = () => {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="footer">
         <a href="#home" className="logo">
           AL<span>BAB</span>
@@ -299,7 +335,6 @@ const App = () => {
         <span>Made for Jordan 🇯🇴</span>
       </footer>
 
-      {/* Order Form */}
       {selectedService && (
         <OrderForm
           service={selectedService}
