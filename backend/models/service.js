@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const serviceSchema = new mongoose.Schema({
@@ -16,7 +17,22 @@ const serviceSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ["fuel_delivery", "water_delivery", "car_wash"],
+    enum: [
+      "fuel_delivery",
+      "water_delivery",
+      "car_wash",
+      "home_cleaning",
+      "plumbing",
+      "electrical_maintenance",
+      "ac_maintenance",
+      "car_repair",
+      "battery_replacement",
+      "tire_services",
+      "water_tank_cleaning",
+      "appliance_repair",
+      "gas_cylinder_delivery",
+      "grocery_delivery",
+    ],
   },
 
   price: {
