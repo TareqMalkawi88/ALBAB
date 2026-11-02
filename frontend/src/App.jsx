@@ -1,11 +1,20 @@
-
 import { useEffect, useState } from "react";
+
 import Auth from "./components/Auth";
 import OrderForm from "./components/OrderForm";
 import MyOrders from "./components/MyOrders";
+import SupportChat from "./components/SupportChat";
+import AdminDashboard from "./components/AdminDashboard";
+import ServiceReviews from "./components/ServiceReviews";
+
 import "./App.css";
 
-const API_URL = "http://localhost:5000/api";
+// Backend URL
+const BACKEND_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const API_URL = `${BACKEND_URL}/api`;
 
 const App = () => {
   const [services, setServices] = useState([]);
@@ -14,10 +23,51 @@ const App = () => {
 
   const [showAuth, setShowAuth] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
+  const [showSupportChat, setShowSupportChat] = useState(false);
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
+
+  const [selectedReviewsService, setSelectedReviewsService] =
+    useState(null);
+
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const categories = {
+    fuel_delivery: "Fuel",
+    car_wash: "Car Wash",
+    water_tank_cleaning: "Water Tank",
+    home_cleaning: "Home Cleaning",
+    plumbing: "Plumbing",
+    electrical_maintenance: "Electrical",
+    ac_maintenance: "AC Maintenance",
+    car_repair: "Car Repair",
+    battery_replacement: "Battery",
+    tire_services: "Tire Services",
+    gas_cylinder_delivery: "Gas Delivery",
+    appliance_repair: "Appliance Repair",
+  };
+
+  const getServiceIcon = (category) => {
+    const icons = {
+      fuel_delivery: "⛽",
+      car_wash: "🚗",
+      water_tank_cleaning: "🚰",
+      home_cleaning: "🧹",
+      plumbing: "🔧",
+      electrical_maintenance: "💡",
+      ac_maintenance: "❄️",
+      car_repair: "🛠️",
+      battery_replacement: "🔋",
+      tire_services: "🛞",
+      gas_cylinder_delivery: "🔥",
+      appliance_repair: "🏠",
+    };
+
+    return icons[category] || "🛠️";
+  };
 
   // Fetch services
   useEffect(() => {
@@ -32,6 +82,7 @@ const App = () => {
         const data = await response.json();
         setServices(data.services || []);
       } catch (error) {
+        console.error("Fetch services error:", error);
         setError("Unable to load services. Please try again later.");
       } finally {
         setLoading(false);
@@ -65,6 +116,7 @@ const App = () => {
         const data = await response.json();
         setUser(data.user);
       } catch (error) {
+        console.error("Restore session error:", error);
         localStorage.removeItem("token");
         setUser(null);
       } finally {
@@ -86,18 +138,11 @@ const App = () => {
     localStorage.removeItem("token");
     setUser(null);
     setShowMyOrders(false);
+    setShowSupportChat(false);
     setSelectedService(null);
-  };
-
-  // Get service icon
-  const getServiceIcon = (category) => {
-    const icons = {
-      fuel_delivery: "⛽",
-      water_delivery: "💧",
-      car_wash: "🚗",
-    };
-
-    return icons[category] || "🛠️";
+    setSelectedReviewsService(null);
+    setActiveCategory("all");
+    setSearchQuery("");
   };
 
   // Handle order click
@@ -117,6 +162,23 @@ const App = () => {
     alert("Your order has been placed successfully!");
   };
 
+  // Search and filter services
+  const filteredServices = services.filter((service) => {
+    const query = searchQuery.trim().toLowerCase();
+
+    const matchesCategory =
+      activeCategory === "all" ||
+      service.category === activeCategory;
+
+    const matchesSearch =
+      service.title?.toLowerCase().includes(query) ||
+      service.description?.toLowerCase().includes(query) ||
+      service.location?.toLowerCase().includes(query) ||
+      service.provider?.name?.toLowerCase().includes(query);
+
+    return matchesCategory && matchesSearch;
+  });
+
   if (authLoading) {
     return (
       <div className="status-message">
@@ -125,6 +187,16 @@ const App = () => {
     );
   }
 
+  // Admin Dashboard
+  if (user?.role === "admin") {
+    return (
+      <AdminDashboard
+        onClose={handleLogout}
+      />
+    );
+  }
+
+  // Authentication page
   if (showAuth) {
     return (
       <Auth
@@ -134,16 +206,20 @@ const App = () => {
     );
   }
 
+  // My Orders page
   if (showMyOrders) {
     return (
       <MyOrders
         onClose={() => setShowMyOrders(false)}
+        user={user}
       />
     );
   }
 
   return (
     <div className="app">
+
+      {/* Navbar */}
       <nav className="navbar">
         <a href="#home" className="logo">
           AL<span>BAB</span>
@@ -167,6 +243,15 @@ const App = () => {
               >
                 My Orders
               </button>
+
+              {user.role === "customer" && (
+                <button
+                  className="login-btn"
+                  onClick={() => setShowSupportChat(true)}
+                >
+                  💬 Support Chat
+                </button>
+              )}
 
               <button
                 className="login-btn"
@@ -196,6 +281,8 @@ const App = () => {
       </nav>
 
       <main>
+
+        {/* Hero Section */}
         <section className="hero" id="home">
           <div className="hero-content">
             <span className="hero-tag">
@@ -209,7 +296,8 @@ const App = () => {
 
             <p>
               ALBAB makes your daily life easier. Order fuel, water,
-              car washing, and more services with just a few clicks.
+              car washing, home maintenance, and more services
+              with just a few clicks.
             </p>
 
             <div className="hero-actions">
@@ -256,41 +344,139 @@ const App = () => {
           </div>
         </section>
 
+        {/* Services Section */}
         <section className="services-section" id="services">
           <div className="section-heading">
             <span>WHAT WE OFFER</span>
-            <h2>Our Popular Services</h2>
-            <p>Live services from ALBAB providers.</p>
+            <h2>Our Services</h2>
+            <p>
+              Discover services available at your doorstep.
+            </p>
+          </div>
+
+          {!loading && !error && (
+            <div className="services-count">
+              Showing {filteredServices.length} of {services.length} services
+            </div>
+          )}
+
+          <div className="service-search">
+            <span>🔍</span>
+
+            <input
+              type="text"
+              placeholder="Search by service, description, or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="category-filters">
+            <button
+              className={
+                activeCategory === "all"
+                  ? "filter-btn active"
+                  : "filter-btn"
+              }
+              onClick={() => setActiveCategory("all")}
+            >
+              All Services
+            </button>
+
+            {Object.entries(categories).map(([value, label]) => (
+              <button
+                key={value}
+                className={
+                  activeCategory === value
+                    ? "filter-btn active"
+                    : "filter-btn"
+                }
+                onClick={() => setActiveCategory(value)}
+              >
+                {getServiceIcon(value)} {label}
+              </button>
+            ))}
           </div>
 
           {loading && (
-            <p className="status-message">Loading services...</p>
+            <p className="status-message">
+              Loading services...
+            </p>
           )}
 
           {error && (
             <p className="error-message">{error}</p>
           )}
 
-          {!loading && !error && services.length === 0 && (
+          {!loading && !error && filteredServices.length === 0 && (
             <p className="status-message">
-              No services are available yet.
+              No services found. Try another search or category.
             </p>
           )}
 
           <div className="services-grid">
-            {services.map((service) => (
+            {filteredServices.map((service) => (
               <article className="service-card" key={service._id}>
                 <div className="service-icon">
                   {getServiceIcon(service.category)}
                 </div>
 
-                <h3>
-                  {service.title.replaceAll("_", " ")}
-                </h3>
+                <span className="service-category">
+                  {categories[service.category] || "Other"}
+                </span>
 
-                <h4>{service.location}</h4>
+                <h3>{service.title}</h3>
+
+                <h4>📍 {service.location}</h4>
 
                 <p>{service.description}</p>
+
+                {/* Service Rating */}
+                <div className="service-rating">
+                  {service.reviewCount > 0 ? (
+                    <>
+                      <span className="rating-stars">★</span>
+
+                      <strong>
+                        {Number(service.averageRating || 0).toFixed(1)}
+                      </strong>
+
+                      <span className="rating-total">/ 5</span>
+
+                      <small>
+                        ({service.reviewCount}{" "}
+                        {service.reviewCount === 1
+                          ? "review"
+                          : "reviews"})
+                      </small>
+                    </>
+                  ) : (
+                    <small className="no-reviews">
+                      No reviews yet
+                    </small>
+                  )}
+                </div>
+
+                {/* Read Reviews Button */}
+                {service.reviewCount > 0 && (
+                  <button
+                    className="read-reviews-btn"
+                    onClick={() =>
+                      setSelectedReviewsService(service)
+                    }
+                  >
+                    Read Reviews →
+                  </button>
+                )}
 
                 <div className="service-footer">
                   <span>{service.price} JOD</span>
@@ -311,6 +497,7 @@ const App = () => {
           </div>
         </section>
 
+        {/* About Section */}
         <section className="about-section" id="about">
           <span>ABOUT ALBAB</span>
 
@@ -325,6 +512,7 @@ const App = () => {
         </section>
       </main>
 
+      {/* Footer */}
       <footer className="footer">
         <a href="#home" className="logo">
           AL<span>BAB</span>
@@ -335,6 +523,7 @@ const App = () => {
         <span>Made for Jordan 🇯🇴</span>
       </footer>
 
+      {/* Order Modal */}
       {selectedService && (
         <OrderForm
           service={selectedService}
@@ -342,6 +531,22 @@ const App = () => {
           onOrderSuccess={handleOrderSuccess}
         />
       )}
+
+      {/* Customer Support Chat */}
+      {showSupportChat && user?.role === "customer" && (
+        <SupportChat
+          onClose={() => setShowSupportChat(false)}
+        />
+      )}
+
+      {/* Service Reviews Modal */}
+      {selectedReviewsService && (
+        <ServiceReviews
+          service={selectedReviewsService}
+          onClose={() => setSelectedReviewsService(null)}
+        />
+      )}
+
     </div>
   );
 };

@@ -1,7 +1,12 @@
 
 import { useState } from "react";
 
-const API_URL = "http://localhost:5000/api/orders";
+// Backend URL
+const BACKEND_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const API_URL = `${BACKEND_URL}/api/orders`;
 
 const OrderForm = ({ service, onClose, onOrderSuccess }) => {
   const [quantity, setQuantity] = useState(1);
@@ -70,7 +75,9 @@ const OrderForm = ({ service, onClose, onOrderSuccess }) => {
         </button>
 
         <h2>Place Your Order</h2>
-        <p className="order-subtitle">{service.title.replaceAll("_", " ")}</p>
+        <p className="order-subtitle">
+          {service.title.replaceAll("_", " ")}
+        </p>
 
         <div className="order-service-info">
           <span>Location: {service.location}</span>
@@ -115,7 +122,10 @@ const OrderForm = ({ service, onClose, onOrderSuccess }) => {
           {error && <p className="order-error">{error}</p>}
           {success && <p className="order-success">{success}</p>}
 
-          <button type="submit" disabled={loading || success !== ""}>
+          <button
+            type="submit"
+            disabled={loading || success !== ""}
+          >
             {loading ? "Placing Order..." : "Place Order"}
           </button>
         </form>
