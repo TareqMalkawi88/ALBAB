@@ -1,122 +1,299 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+import { useEffect, useState } from "react";
+import Auth from "./components/Auth";
+import OrderForm from "./components/OrderForm";
+import "./App.css";
+
+const API_URL = "http://localhost:5000/api";
+
+const App = () => {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+
+  // Fetch services from backend
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch(`${API_URL}/services`);
+
+        if (!response.ok) {
+          throw new Error("Failed to load services");
+        }
+
+        const data = await response.json();
+        setServices(data.services || []);
+      } catch (error) {
+        setError("Unable to load services. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  // Handle successful login
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setShowAuth(false);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    setSelectedService(null);
+  };
+
+  // Get service icon
+  const getServiceIcon = (category) => {
+    const icons = {
+      fuel_delivery: "⛽",
+      water_delivery: "💧",
+      car_wash: "🚗",
+    };
+
+    return icons[category] || "🛠️";
+  };
+
+  // Handle order button
+  const handleOrderClick = (service) => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+
+    setSelectedService(service);
+  };
+
+  // Handle successful order
+  const handleOrderSuccess = (order) => {
+    console.log("Order created successfully:", order);
+    setSelectedService(null);
+    alert("Your order has been placed successfully!");
+  };
+
+  // Show authentication page
+  if (showAuth) {
+    return (
+      <Auth
+        onLogin={handleLogin}
+        onClose={() => setShowAuth(false)}
+      />
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      {/* Navbar */}
+      <nav className="navbar">
+        <a href="#home" className="logo">
+          AL<span>BAB</span>
+          <small>عالباب</small>
+        </a>
+
+        <div className="nav-links">
+          <a href="#home">Home</a>
+          <a href="#services">Services</a>
+          <a href="#about">About</a>
         </div>
-        <div>
-          <h1>Get started</h1>
+
+        <div className="nav-actions">
+          {user ? (
+            <>
+              <span>Hi, {user.name}</span>
+
+              <button
+                className="login-btn"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="login-btn"
+                onClick={() => setShowAuth(true)}
+              >
+                Login
+              </button>
+
+              <button
+                className="register-btn"
+                onClick={() => setShowAuth(true)}
+              >
+                Get Started
+              </button>
+            </>
+          )}
+        </div>
+      </nav>
+
+      <main>
+        {/* Hero Section */}
+        <section className="hero" id="home">
+          <div className="hero-content">
+            <span className="hero-tag">
+              YOUR SERVICES, AT YOUR DOOR
+            </span>
+
+            <h1>
+              Everything You Need,
+              <span> Delivered to Your Door.</span>
+            </h1>
+
+            <p>
+              ALBAB makes your daily life easier. Order fuel, water,
+              car washing, and more services with just a few clicks.
+            </p>
+
+            <div className="hero-actions">
+              <a href="#services" className="primary-btn">
+                Explore Services →
+              </a>
+
+              <a href="#about" className="secondary-btn">
+                Learn More
+              </a>
+            </div>
+
+            <div className="hero-stats">
+              <div>
+                <strong>Easy</strong>
+                <span>Ordering</span>
+              </div>
+
+              <div>
+                <strong>Fast</strong>
+                <span>Delivery</span>
+              </div>
+
+              <div>
+                <strong>Reliable</strong>
+                <span>Services</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual">
+            <div className="hero-circle">
+              <span className="hero-icon">🏠</span>
+
+              <div className="floating-card">
+                <span>📦</span>
+
+                <div>
+                  <strong>On your doorstep</strong>
+                  <small>Simple. Fast. Reliable.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Services Section */}
+        <section className="services-section" id="services">
+          <div className="section-heading">
+            <span>WHAT WE OFFER</span>
+            <h2>Our Popular Services</h2>
+            <p>Live services from ALBAB providers.</p>
+          </div>
+
+          {loading && (
+            <p className="status-message">
+              Loading services...
+            </p>
+          )}
+
+          {error && (
+            <p className="error-message">
+              {error}
+            </p>
+          )}
+
+          {!loading && !error && services.length === 0 && (
+            <p className="status-message">
+              No services are available yet.
+            </p>
+          )}
+
+          <div className="services-grid">
+            {services.map((service) => (
+              <article className="service-card" key={service._id}>
+                <div className="service-icon">
+                  {getServiceIcon(service.category)}
+                </div>
+
+                <h3>
+                  {service.title.replaceAll("_", " ")}
+                </h3>
+
+                <h4>{service.location}</h4>
+
+                <p>{service.description}</p>
+
+                <div className="service-footer">
+                  <span>{service.price} JOD</span>
+
+                  <button
+                    onClick={() => handleOrderClick(service)}
+                    aria-label={`Order ${service.title}`}
+                  >
+                    →
+                  </button>
+                </div>
+
+                <small className="provider-name">
+                  Provider: {service.provider?.name || "ALBAB Provider"}
+                </small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section className="about-section" id="about">
+          <span>ABOUT ALBAB</span>
+
+          <h2>
+            Life is easier when everything is at your door.
+          </h2>
+
           <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+            ALBAB connects customers with trusted service providers
+            across Jordan, making everyday services easier to access.
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        </section>
+      </main>
 
-      <div className="ticks"></div>
+      {/* Footer */}
+      <footer className="footer">
+        <a href="#home" className="logo">
+          AL<span>BAB</span>
+          <small>عالباب</small>
+        </a>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <p>© 2026 ALBAB. All rights reserved.</p>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+        <span>Made for Jordan 🇯🇴</span>
+      </footer>
 
-export default App
+      {/* Order Form Modal */}
+      {selectedService && (
+        <OrderForm
+          service={selectedService}
+          onClose={() => setSelectedService(null)}
+          onOrderSuccess={handleOrderSuccess}
+        />
+      )}
+    </div>
+  );
+};
+
+export default App;
