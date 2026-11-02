@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Auth from "./components/Auth";
 import OrderForm from "./components/OrderForm";
+import MyOrders from "./components/MyOrders";
 import "./App.css";
 
 const API_URL = "http://localhost:5000/api";
@@ -12,10 +13,12 @@ const App = () => {
   const [error, setError] = useState("");
 
   const [showAuth, setShowAuth] = useState(false);
+  const [showMyOrders, setShowMyOrders] = useState(false);
+
   const [user, setUser] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
 
-  // Fetch services from backend
+  // Fetch services
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -37,7 +40,7 @@ const App = () => {
     fetchServices();
   }, []);
 
-  // Handle successful login
+  // Handle login
   const handleLogin = (userData) => {
     setUser(userData);
     setShowAuth(false);
@@ -47,6 +50,7 @@ const App = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
+    setShowMyOrders(false);
     setSelectedService(null);
   };
 
@@ -61,7 +65,7 @@ const App = () => {
     return icons[category] || "🛠️";
   };
 
-  // Handle order button
+  // Handle order click
   const handleOrderClick = (service) => {
     if (!user) {
       setShowAuth(true);
@@ -78,12 +82,21 @@ const App = () => {
     alert("Your order has been placed successfully!");
   };
 
-  // Show authentication page
+  // Show authentication
   if (showAuth) {
     return (
       <Auth
         onLogin={handleLogin}
         onClose={() => setShowAuth(false)}
+      />
+    );
+  }
+
+  // Show customer orders
+  if (showMyOrders) {
+    return (
+      <MyOrders
+        onClose={() => setShowMyOrders(false)}
       />
     );
   }
@@ -107,6 +120,13 @@ const App = () => {
           {user ? (
             <>
               <span>Hi, {user.name}</span>
+
+              <button
+                className="login-btn"
+                onClick={() => setShowMyOrders(true)}
+              >
+                My Orders
+              </button>
 
               <button
                 className="login-btn"
@@ -136,7 +156,7 @@ const App = () => {
       </nav>
 
       <main>
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="hero" id="home">
           <div className="hero-content">
             <span className="hero-tag">
@@ -197,7 +217,7 @@ const App = () => {
           </div>
         </section>
 
-        {/* Services Section */}
+        {/* Services */}
         <section className="services-section" id="services">
           <div className="section-heading">
             <span>WHAT WE OFFER</span>
@@ -206,15 +226,11 @@ const App = () => {
           </div>
 
           {loading && (
-            <p className="status-message">
-              Loading services...
-            </p>
+            <p className="status-message">Loading services...</p>
           )}
 
           {error && (
-            <p className="error-message">
-              {error}
-            </p>
+            <p className="error-message">{error}</p>
           )}
 
           {!loading && !error && services.length === 0 && (
@@ -257,7 +273,7 @@ const App = () => {
           </div>
         </section>
 
-        {/* About Section */}
+        {/* About */}
         <section className="about-section" id="about">
           <span>ABOUT ALBAB</span>
 
@@ -280,11 +296,10 @@ const App = () => {
         </a>
 
         <p>© 2026 ALBAB. All rights reserved.</p>
-
         <span>Made for Jordan 🇯🇴</span>
       </footer>
 
-      {/* Order Form Modal */}
+      {/* Order Form */}
       {selectedService && (
         <OrderForm
           service={selectedService}
